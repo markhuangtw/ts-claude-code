@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "tsx --env-file-if-exists=.env src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write src"
   },
   "devEngines": {
     "packageManager": {
@@ -19,6 +20,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
+    "prettier": "^3.9.10",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   }
