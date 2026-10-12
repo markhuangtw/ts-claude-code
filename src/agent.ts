@@ -3,10 +3,15 @@ import { tools, runTool } from "./tools/index.js";
 
 const MODEL = "claude-sonnet-5-5";
 const MAX_TOKENS = 8192;
+const SYSTEM_PROMPT = `你是一個 coding agent, 在使用者的電腦上幫忙讀寫程式碼。
+目前工作目錄: ${process.cwd()}
+請用繁體中文 (台灣用語) 回答。`;
 
 export class Agent {
   private client = new Anthropic(); // 自動讀 ANTHROPIC_API_KEY
   private messages: Anthropic.MessageParam[] = [];
+
+  constructor(private confirm: (question: string) => Promise<boolean>) {}
 
   /**
    * 處理一則使用者輸入，直到模型不再要求 tool 為止。
@@ -22,6 +27,7 @@ export class Agent {
         model: MODEL,
         max_tokens: MAX_TOKENS,
         messages: this.messages,
+        system: SYSTEM_PROMPT,
         tools,
       });
 
@@ -42,6 +48,21 @@ export class Agent {
       const results: Anthropic.ToolResultBlockParam[] = [];
       for (const block of res.content) {
         if (block.type !== "tool_use") continue;
+
+        if (block.name === "bash") {
+          const ok = await this.confirm(
+            `執行 ${(block.input as { command: string }).command} ？(y/n) `,
+          );
+          if (!ok) {
+            results.push({
+              type: "tool_result",
+              tool_use_id: block.id,
+              content: "使用者拒絕執行這個指令",
+              is_error: true,
+            });
+            continue;
+          }
+        }
 
         try {
           const output = await runTool(block.name, block.input);
