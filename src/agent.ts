@@ -14,7 +14,19 @@ export class Agent {
    * M2：如果 stop_reason === "tool_use"，執行 tool、推回 tool_result，再呼叫一次（迴圈）
    */
   async run(userInput: string): Promise<void> {
-    // TODO(M1)
-    throw new Error("not implemented");
+    this.messages.push({role: "user", content: userInput})
+    
+    const res = await this.client.messages.create({
+      model: MODEL,
+      max_tokens: MAX_TOKENS,
+      messages: this.messages
+    })
+
+    this.messages.push({ role: "assistant", content: res.content})
+
+    for (const block of res.content) {
+      if (block.type === "text") console.log(block.text);
+    }
+    console.log(`[usage] in=${res.usage.input_tokens} out=${res.usage.output_tokens}`);
   }
 }
